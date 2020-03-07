@@ -9,8 +9,23 @@ fi
 
 SAMPLE_APP_DIR="${PWD}/data/sample-app"
 export MIX_ARCHIVES="${PWD}/tmp/archives"
+PHOENIX_GIT="${PWD}/tmp/phoenix"
 
 phoenix_version=${1}
+
+if [ $1 = "master" ]; then
+
+  if [ -d ${PHOENIX_GIT} ]; then
+    echo "Deleting existing temp Phoenix git at ${PHOENIX_GIT}"
+    rm -fr ${PHOENIX_GIT}
+  fi
+
+  echo "Cloning Phoenix master"
+  git clone https://github.com/phoenixframework/phoenix ${PHOENIX_GIT} --depth 1
+
+  phoenix_version=$(awk '$1 == "@version" {print $2}' ${PHOENIX_GIT}/mix.exs | sed 's/\"//g')
+fi
+
 sample_app_path="${PWD}/data/sample-app/${phoenix_version}"
 
 if [ -d ${sample_app_path} ]; then
@@ -23,9 +38,19 @@ if [ -d ${MIX_ARCHIVES} ]; then
   rm -fr ${MIX_ARCHIVES}
 fi
 
-echo "Installing phx_new mix archive for ${phoenix_version}"
+echo "Installing Hex"
 mix local.hex --force
-mix archive.install hex phx_new ${phoenix_version} --force
+
+if [ $1 = "master" ]; then
+  echo "Generating phx_new mix archive for ${phoenix_version}"
+
+  pushd ${PHOENIX_GIT}/installer
+  MIX_ENV=prod mix do archive.build, archive.install --force
+  popd
+else
+  echo "Installing phx_new mix archive for ${phoenix_version}"
+  mix archive.install hex phx_new ${phoenix_version} --force
+fi
 
 echo "Generating new sample app for ${phoenix_version}"
 echo n | mix phx.new ${sample_app_path} --module SampleApp --app sample_app
