@@ -1,0 +1,679 @@
+diff --git README.md README.md
+index 1da0428..7657c0f 100644
+--- README.md
++++ README.md
+@@ -13,8 +13,8 @@ Ready to run in production? Please [check our deployment guides](https://hexdocs
+ 
+ ## Learn more
+ 
+-  * Official website: https://www.phoenixframework.org/
++  * Official website: http://www.phoenixframework.org/
+   * Guides: https://hexdocs.pm/phoenix/overview.html
+   * Docs: https://hexdocs.pm/phoenix
+-  * Forum: https://elixirforum.com/c/phoenix-forum
++  * Mailing list: http://groups.google.com/group/phoenix-talk
+   * Source: https://github.com/phoenixframework/phoenix
+diff --git assets/css/app.css assets/css/app.css
+index 2ee9004..fec0b3f 100644
+--- assets/css/app.css
++++ assets/css/app.css
+@@ -1,36 +1,3 @@
+ /* This file is for your main application css. */
+-@import "./phoenix.css";
+ 
+-/* Alerts and form errors */
+-.alert {
+-  padding: 15px;
+-  margin-bottom: 20px;
+-  border: 1px solid transparent;
+-  border-radius: 4px;
+-}
+-.alert-info {
+-  color: #31708f;
+-  background-color: #d9edf7;
+-  border-color: #bce8f1;
+-}
+-.alert-warning {
+-  color: #8a6d3b;
+-  background-color: #fcf8e3;
+-  border-color: #faebcc;
+-}
+-.alert-danger {
+-  color: #a94442;
+-  background-color: #f2dede;
+-  border-color: #ebccd1;
+-}
+-.alert p {
+-  margin-bottom: 0;
+-}
+-.alert:empty {
+-  display: none;
+-}
+-.help-block {
+-  color: #a94442;
+-  display: block;
+-  margin: -1rem 0 2rem;
+-}
++@import "./phoenix.css";
+diff --git assets/css/phoenix.css assets/css/phoenix.css
+index 3767b31..e1ca940 100644
+--- assets/css/phoenix.css
++++ assets/css/phoenix.css
+@@ -15,7 +15,6 @@ h3{font-size: 2.2rem; letter-spacing: -.08rem; line-height: 1.35}
+ h4{font-size: 1.8rem; letter-spacing: -.05rem; line-height: 1.5}
+ h5{font-size: 1.6rem; letter-spacing: 0; line-height: 1.4}
+ h6{font-size: 1.4rem; letter-spacing: 0; line-height: 1.2}
+-pre{padding: 1em;}
+ 
+ .container{
+   margin: 0 auto;
+@@ -28,19 +27,53 @@ select {
+   width: auto;
+ }
+ 
++/* Alerts and form errors */
++.alert {
++  padding: 15px;
++  margin-bottom: 20px;
++  border: 1px solid transparent;
++  border-radius: 4px;
++}
++.alert-info {
++  color: #31708f;
++  background-color: #d9edf7;
++  border-color: #bce8f1;
++}
++.alert-warning {
++  color: #8a6d3b;
++  background-color: #fcf8e3;
++  border-color: #faebcc;
++}
++.alert-danger {
++  color: #a94442;
++  background-color: #f2dede;
++  border-color: #ebccd1;
++}
++.alert p {
++  margin-bottom: 0;
++}
++.alert:empty {
++  display: none;
++}
++.help-block {
++  color: #a94442;
++  display: block;
++  margin: -1rem 0 2rem;
++}
++
+ /* Phoenix promo and logo */
+ .phx-hero {
+   text-align: center;
+   border-bottom: 1px solid #e3e3e3;
+   background: #eee;
+   border-radius: 6px;
+-  padding: 3em 3em 1em;
++  padding: 3em;
+   margin-bottom: 3rem;
+   font-weight: 200;
+   font-size: 120%;
+ }
+-.phx-hero input {
+-  background: #ffffff;
++.phx-hero p {
++  margin: 0;
+ }
+ .phx-logo {
+   min-width: 300px;
+diff --git assets/js/app.js assets/js/app.js
+index f1e5c60..8a5d386 100644
+--- assets/js/app.js
++++ assets/js/app.js
+@@ -1,15 +1,17 @@
+ // We need to import the CSS so that webpack will load it.
+ // The MiniCssExtractPlugin is used to separate it out into
+ // its own CSS file.
+-import "../css/app.css"
++import css from "../css/app.css"
+ 
+ // webpack automatically bundles all modules in your
+ // entry points. Those entry points can be configured
+ // in "webpack.config.js".
+ //
+-// Import deps with the dep name or local files with a relative path, for example:
++// Import dependencies
+ //
+-//     import {Socket} from "phoenix"
+-//     import socket from "./socket"
++import "phoenix_html"
++
++// Import local files
+ //
+-import "phoenix_html"
+\ No newline at end of file
++// Local files can be imported directly using relative paths, for example:
++// import socket from "./socket"
+diff --git assets/package.json assets/package.json
+index 7ce647b..a4ba0e7 100644
+--- assets/package.json
++++ assets/package.json
+@@ -1,6 +1,5 @@
+ {
+   "repository": {},
+-  "description": " ",
+   "license": "MIT",
+   "scripts": {
+     "deploy": "webpack --mode production",
+@@ -14,12 +13,12 @@
+     "@babel/core": "^7.0.0",
+     "@babel/preset-env": "^7.0.0",
+     "babel-loader": "^8.0.0",
+-    "copy-webpack-plugin": "^5.1.1",
+-    "css-loader": "^3.4.2",
+-    "mini-css-extract-plugin": "^0.9.0",
+-    "optimize-css-assets-webpack-plugin": "^5.0.1",
+-    "terser-webpack-plugin": "^2.3.2",
+-    "webpack": "4.41.5",
+-    "webpack-cli": "^3.3.2"
++    "copy-webpack-plugin": "^4.5.0",
++    "css-loader": "^2.1.1",
++    "mini-css-extract-plugin": "^0.4.0",
++    "optimize-css-assets-webpack-plugin": "^4.0.0",
++    "uglifyjs-webpack-plugin": "^1.2.4",
++    "webpack": "4.4.0",
++    "webpack-cli": "^2.0.10"
+   }
+ }
+diff --git assets/webpack.config.js assets/webpack.config.js
+index 68b77cb..45ab14f 100644
+--- assets/webpack.config.js
++++ assets/webpack.config.js
+@@ -1,26 +1,24 @@
+ const path = require('path');
+ const glob = require('glob');
+ const MiniCssExtractPlugin = require('mini-css-extract-plugin');
+-const TerserPlugin = require('terser-webpack-plugin');
++const UglifyJsPlugin = require('uglifyjs-webpack-plugin');
+ const OptimizeCSSAssetsPlugin = require('optimize-css-assets-webpack-plugin');
+ const CopyWebpackPlugin = require('copy-webpack-plugin');
+-const devMode = process.env.NODE_ENV !== 'production'
+ 
+ module.exports = (env, options) => ({
+   optimization: {
+     minimizer: [
+-      new TerserPlugin({ cache: true, parallel: true, sourceMap: devMode }),
++      new UglifyJsPlugin({ cache: true, parallel: true, sourceMap: false }),
+       new OptimizeCSSAssetsPlugin({})
+     ]
+   },
+   entry: {
+-    './js/app.js': glob.sync('./vendor/**/*.js').concat(['./js/app.js'])
++      './js/app.js': ['./js/app.js'].concat(glob.sync('./vendor/**/*.js'))
+   },
+   output: {
+     filename: 'app.js',
+     path: path.resolve(__dirname, '../priv/static/js')
+   },
+-  devtool: devMode ? 'source-map' : undefined,
+   module: {
+     rules: [
+       {
+@@ -32,15 +30,7 @@ module.exports = (env, options) => ({
+       },
+       {
+         test: /\.css$/,
+-        use: [
+-          MiniCssExtractPlugin.loader,
+-          {
+-            loader: 'css-loader',
+-            options: {
+-              sourceMap: devMode
+-            }
+-          }
+-        ]
++        use: [MiniCssExtractPlugin.loader, 'css-loader']
+       }
+     ]
+   },
+diff --git config/config.exs config/config.exs
+index 8ada87a..25fe438 100644
+--- config/config.exs
++++ config/config.exs
+@@ -14,9 +14,8 @@ config :sample_app,
+ config :sample_app, SampleAppWeb.Endpoint,
+   url: [host: "localhost"],
+   secret_key_base: "aaaaaaaa",
+-  render_errors: [view: SampleAppWeb.ErrorView, accepts: ~w(html json), layout: false],
+-  pubsub_server: SampleApp.PubSub,
+-  live_view: [signing_salt: "aaaaaaaa"]
++  render_errors: [view: SampleAppWeb.ErrorView, accepts: ~w(html json)],
++  pubsub: [name: SampleApp.PubSub, adapter: Phoenix.PubSub.PG2]
+ 
+ # Configures Elixir's Logger
+ config :logger, :console,
+diff --git config/dev.exs config/dev.exs
+index 254648d..217905f 100644
+--- config/dev.exs
++++ config/dev.exs
+@@ -60,7 +60,7 @@ config :sample_app, SampleAppWeb.Endpoint,
+     patterns: [
+       ~r"priv/static/.*(js|css|png|jpeg|jpg|gif|svg)$",
+       ~r"priv/gettext/.*(po)$",
+-      ~r"lib/sample_app_web/(live|views)/.*(ex)$",
++      ~r"lib/sample_app_web/{live,views}/.*(ex)$",
+       ~r"lib/sample_app_web/templates/.*(eex)$"
+     ]
+   ]
+diff --git config/prod.exs config/prod.exs
+index 1e3a375..ead09c8 100644
+--- config/prod.exs
++++ config/prod.exs
+@@ -25,11 +25,11 @@ config :logger, level: :info
+ #       ...
+ #       url: [host: "example.com", port: 443],
+ #       https: [
++#         :inet6,
+ #         port: 443,
+ #         cipher_suite: :strong,
+ #         keyfile: System.get_env("SOME_APP_SSL_KEY_PATH"),
+-#         certfile: System.get_env("SOME_APP_SSL_CERT_PATH"),
+-#         transport_options: [socket_opts: [:inet6]]
++#         certfile: System.get_env("SOME_APP_SSL_CERT_PATH")
+ #       ]
+ #
+ # The `cipher_suite` is set to `:strong` to support only the
+@@ -50,6 +50,16 @@ config :logger, level: :info
+ #
+ # Check `Plug.SSL` for all available options in `force_ssl`.
+ 
++# ## Using releases (Elixir v1.9+)
++#
++# If you are doing OTP releases, you need to instruct Phoenix
++# to start each relevant endpoint:
++#
++#     config :sample_app, SampleAppWeb.Endpoint, server: true
++#
++# Then you can assemble a release by calling `mix release`.
++# See `mix help release` for more information.
++
+ # Finally import the config/prod.secret.exs which loads secrets
+ # and configuration from environment variables.
+ import_config "prod.secret.exs"
+diff --git config/prod.secret.exs config/prod.secret.exs
+index 95aaebb..dc5b6f0 100644
+--- config/prod.secret.exs
++++ config/prod.secret.exs
+@@ -1,7 +1,8 @@
+-# In this file, we load production configuration and secrets
+-# from environment variables. You can also hardcode secrets,
+-# although such is generally not recommended and you have to
+-# remember to add this file to your .gitignore.
++# In this file, we load production configuration and
++# secrets from environment variables. You can also
++# hardcode secrets, although such is generally not
++# recommended and you have to remember to add this
++# file to your .gitignore.
+ use Mix.Config
+ 
+ database_url =
+@@ -24,18 +25,5 @@ secret_key_base =
+     """
+ 
+ config :sample_app, SampleAppWeb.Endpoint,
+-  http: [
+-    port: String.to_integer(System.get_env("PORT") || "4000"),
+-    transport_options: [socket_opts: [:inet6]]
+-  ],
++  http: [:inet6, port: String.to_integer(System.get_env("PORT") || "4000")],
+   secret_key_base: "aaaaaaaa"
+-
+-# ## Using releases (Elixir v1.9+)
+-#
+-# If you are doing OTP releases, you need to instruct Phoenix
+-# to start each relevant endpoint:
+-#
+-#     config :sample_app, SampleAppWeb.Endpoint, server: true
+-#
+-# Then you can assemble a release by calling `mix release`.
+-# See `mix help release` for more information.
+diff --git config/test.exs config/test.exs
+index 507b703..31fdfee 100644
+--- config/test.exs
++++ config/test.exs
+@@ -1,14 +1,10 @@
+ use Mix.Config
+ 
+ # Configure your database
+-#
+-# The MIX_TEST_PARTITION environment variable can be used
+-# to provide built-in test partitioning in CI environment.
+-# Run `mix help test` for more information.
+ config :sample_app, SampleApp.Repo,
+   username: "postgres",
+   password: "postgres",
+-  database: "sample_app_test#{System.get_env("MIX_TEST_PARTITION")}",
++  database: "sample_app_test",
+   hostname: "localhost",
+   pool: Ecto.Adapters.SQL.Sandbox
+ 
+diff --git lib/sample_app/application.ex lib/sample_app/application.ex
+index 84e1f18..f9584e1 100644
+--- lib/sample_app/application.ex
++++ lib/sample_app/application.ex
+@@ -6,15 +6,14 @@ defmodule SampleApp.Application do
+   use Application
+ 
+   def start(_type, _args) do
++    # List all child processes to be supervised
+     children = [
+       # Start the Ecto repository
+       SampleApp.Repo,
+-      # Start the PubSub system
+-      {Phoenix.PubSub, name: SampleApp.PubSub},
+-      # Start the Endpoint (http/https)
++      # Start the endpoint when the application starts
+       SampleAppWeb.Endpoint
+-      # Start a worker by calling: SampleApp.Worker.start_link(arg)
+-      # {SampleApp.Worker, arg}
++      # Starts a worker by calling: SampleApp.Worker.start_link(arg)
++      # {SampleApp.Worker, arg},
+     ]
+ 
+     # See https://hexdocs.pm/elixir/Supervisor.html
+diff --git lib/sample_app_web/endpoint.ex lib/sample_app_web/endpoint.ex
+index 285d1c9..92ca519 100644
+--- lib/sample_app_web/endpoint.ex
++++ lib/sample_app_web/endpoint.ex
+@@ -1,15 +1,6 @@
+ defmodule SampleAppWeb.Endpoint do
+   use Phoenix.Endpoint, otp_app: :sample_app
+ 
+-  # The session will be stored in the cookie and signed,
+-  # this means its contents can be read but not tampered with.
+-  # Set :encryption_salt if you would also like to encrypt it.
+-  @session_options [
+-    store: :cookie,
+-    key: "_sample_app_key",
+-    signing_salt: "aaaaaaaa"
+-  ]
+-
+   socket "/socket", SampleAppWeb.UserSocket,
+     websocket: true,
+     longpoll: false
+@@ -30,11 +21,10 @@ defmodule SampleAppWeb.Endpoint do
+     socket "/phoenix/live_reload/socket", Phoenix.LiveReloader.Socket
+     plug Phoenix.LiveReloader
+     plug Phoenix.CodeReloader
+-    plug Phoenix.Ecto.CheckRepoStatus, otp_app: :sample_app
+   end
+ 
+   plug Plug.RequestId
+-  plug Plug.Telemetry, event_prefix: [:phoenix, :endpoint]
++  plug Plug.Logger
+ 
+   plug Plug.Parsers,
+     parsers: [:urlencoded, :multipart, :json],
+@@ -43,6 +33,14 @@ defmodule SampleAppWeb.Endpoint do
+ 
+   plug Plug.MethodOverride
+   plug Plug.Head
+-  plug Plug.Session, @session_options
++
++  # The session will be stored in the cookie and signed,
++  # this means its contents can be read but not tampered with.
++  # Set :encryption_salt if you would also like to encrypt it.
++  plug Plug.Session,
++    store: :cookie,
++    key: "_sample_app_key",
++    signing_salt: "aaaaaaaa"
++
+   plug SampleAppWeb.Router
+ end
+diff --git lib/sample_app_web/templates/layout/app.html.eex lib/sample_app_web/templates/layout/app.html.eex
+index 2dfc524..57a6418 100644
+--- lib/sample_app_web/templates/layout/app.html.eex
++++ lib/sample_app_web/templates/layout/app.html.eex
+@@ -4,9 +4,8 @@
+     <meta charset="utf-8"/>
+     <meta http-equiv="X-UA-Compatible" content="IE=edge"/>
+     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+-    <title><%= assigns[:page_title] || "SampleApp · Phoenix Framework" %></title>
++    <title>SampleApp · Phoenix Framework</title>
+     <link rel="stylesheet" href="<%= Routes.static_path(@conn, "/css/app.css") %>"/>
+-    <%= csrf_meta_tag() %>
+   </head>
+   <body>
+     <header>
+@@ -16,7 +15,7 @@
+             <li><a href="https://hexdocs.pm/phoenix/overview.html">Get Started</a></li>
+           </ul>
+         </nav>
+-        <a href="https://phoenixframework.org/" class="phx-logo">
++        <a href="http://phoenixframework.org/" class="phx-logo">
+           <img src="<%= Routes.static_path(@conn, "/images/phoenix.png") %>" alt="Phoenix Framework Logo"/>
+         </a>
+       </section>
+@@ -24,7 +23,7 @@
+     <main role="main" class="container">
+       <p class="alert alert-info" role="alert"><%= get_flash(@conn, :info) %></p>
+       <p class="alert alert-danger" role="alert"><%= get_flash(@conn, :error) %></p>
+-      <%= @inner_content %>
++      <%= render @view_module, @view_template, assigns %>
+     </main>
+     <script type="text/javascript" src="<%= Routes.static_path(@conn, "/js/app.js") %>"></script>
+   </body>
+diff --git lib/sample_app_web/templates/page/index.html.eex lib/sample_app_web/templates/page/index.html.eex
+index 716caea..8cbd9d8 100644
+--- lib/sample_app_web/templates/page/index.html.eex
++++ lib/sample_app_web/templates/page/index.html.eex
+@@ -1,6 +1,6 @@
+ <section class="phx-hero">
+   <h1><%= gettext "Welcome to %{name}!", name: "Phoenix" %></h1>
+-  <p>Peace-of-mind from prototype to production</p>
++  <p>A productive web framework that<br/>does not compromise speed or maintainability.</p>
+ </section>
+ 
+ <section class="row">
+@@ -14,7 +14,7 @@
+         <a href="https://github.com/phoenixframework/phoenix">Source</a>
+       </li>
+       <li>
+-        <a href="https://github.com/phoenixframework/phoenix/blob/v1.5/CHANGELOG.md">v1.5 Changelog</a>
++        <a href="https://github.com/phoenixframework/phoenix/blob/v1.4/CHANGELOG.md">v1.4 Changelog</a>
+       </li>
+     </ul>
+   </article>
+@@ -30,9 +30,6 @@
+       <li>
+         <a href="https://twitter.com/elixirphoenix">Twitter @elixirphoenix</a>
+       </li>
+-      <li>
+-        <a href="https://elixir-slackin.herokuapp.com/">Elixir on Slack</a>
+-      </li>
+     </ul>
+   </article>
+ </section>
+diff --git lib/sample_app_web/views/error_helpers.ex lib/sample_app_web/views/error_helpers.ex
+index 7bb8bdf..788d905 100644
+--- lib/sample_app_web/views/error_helpers.ex
++++ lib/sample_app_web/views/error_helpers.ex
+@@ -10,10 +10,7 @@ defmodule SampleAppWeb.ErrorHelpers do
+   """
+   def error_tag(form, field) do
+     Enum.map(Keyword.get_values(form.errors, field), fn error ->
+-      content_tag(:span, translate_error(error),
+-        class: "help-block",
+-        data: [phx_error_for: input_id(form, field)]
+-      )
++      content_tag(:span, translate_error(error), class: "help-block")
+     end)
+   end
+ 
+diff --git lib/sample_app_web.ex lib/sample_app_web.ex
+index ec053d5..bf6f62a 100644
+--- lib/sample_app_web.ex
++++ lib/sample_app_web.ex
+@@ -36,15 +36,18 @@ defmodule SampleAppWeb do
+       # Import convenience functions from controllers
+       import Phoenix.Controller, only: [get_flash: 1, get_flash: 2, view_module: 1]
+ 
+-      # Include shared imports and aliases for views
+-      unquote(view_helpers())
++      # Use all HTML functionality (forms, tags, etc)
++      use Phoenix.HTML
++
++      import SampleAppWeb.ErrorHelpers
++      import SampleAppWeb.Gettext
++      alias SampleAppWeb.Router.Helpers, as: Routes
+     end
+   end
+ 
+   def router do
+     quote do
+       use Phoenix.Router
+-
+       import Plug.Conn
+       import Phoenix.Controller
+     end
+@@ -57,17 +60,6 @@ defmodule SampleAppWeb do
+     end
+   end
+ 
+-  defp view_helpers do
+-    quote do
+-      # Use all HTML functionality (forms, tags, etc)
+-      use Phoenix.HTML
+-
+-      import SampleAppWeb.ErrorHelpers
+-      import SampleAppWeb.Gettext
+-      alias SampleAppWeb.Router.Helpers, as: Routes
+-    end
+-  end
+-
+   @doc """
+   When used, dispatch to the appropriate controller/view/etc.
+   """
+diff --git mix.exs mix.exs
+index 7cac632..9269afe 100644
+--- mix.exs
++++ mix.exs
+@@ -5,7 +5,7 @@ defmodule SampleApp.MixProject do
+     [
+       app: :sample_app,
+       version: "0.1.0",
+-      elixir: "~> 1.7",
++      elixir: "~> 1.5",
+       elixirc_paths: elixirc_paths(Mix.env()),
+       compilers: [:phoenix, :gettext] ++ Mix.compilers(),
+       start_permanent: Mix.env() == :prod,
+@@ -33,9 +33,10 @@ defmodule SampleApp.MixProject do
+   # Type `mix help deps` for examples and options.
+   defp deps do
+     [
+-      {:phoenix, github: "phoenixframework/phoenix", override: true},
+-      {:phoenix_ecto, "~> 4.1"},
+-      {:ecto_sql, "~> 3.1"},
++      {:phoenix, "~> 1.4.5"},
++      {:phoenix_pubsub, "~> 1.1"},
++      {:phoenix_ecto, "~> 4.0"},
++      {:ecto_sql, "~> 3.0"},
+       {:postgrex, ">= 0.0.0"},
+       {:phoenix_html, "~> 2.11"},
+       {:phoenix_live_reload, "~> 1.2", only: :dev},
+diff --git test/sample_app_web/views/layout_view_test.exs test/sample_app_web/views/layout_view_test.exs
+index 518823f..6125800 100644
+--- test/sample_app_web/views/layout_view_test.exs
++++ test/sample_app_web/views/layout_view_test.exs
+@@ -1,8 +1,3 @@
+ defmodule SampleAppWeb.LayoutViewTest do
+   use SampleAppWeb.ConnCase, async: true
+-
+-  # When testing helpers, you may want to import Phoenix.HTML and
+-  # use functions such as safe_to_string() to convert the helper
+-  # result into an HTML string.
+-  # import Phoenix.HTML
+ end
+diff --git test/support/channel_case.ex test/support/channel_case.ex
+index ebc27ed..d199879 100644
+--- test/support/channel_case.ex
++++ test/support/channel_case.ex
+@@ -8,11 +8,9 @@ defmodule SampleAppWeb.ChannelCase do
+   to build common data structures and query the data layer.
+ 
+   Finally, if the test case interacts with the database,
+-  we enable the SQL sandbox, so changes done to the database
+-  are reverted at the end of every test. If you are using
+-  PostgreSQL, you can even run database tests asynchronously
+-  by setting `use SampleAppWeb.ChannelCase, async: true`, although
+-  this option is not recommended for other databases.
++  it cannot be async. For this reason, every test runs
++  inside a transaction which is reset at the beginning
++  of the test unless the test case is marked as async.
+   """
+ 
+   use ExUnit.CaseTemplate
+@@ -20,7 +18,7 @@ defmodule SampleAppWeb.ChannelCase do
+   using do
+     quote do
+       # Import conveniences for testing with channels
+-      import Phoenix.ChannelTest
++      use Phoenix.ChannelTest
+ 
+       # The default endpoint for testing
+       @endpoint SampleAppWeb.Endpoint
+diff --git test/support/conn_case.ex test/support/conn_case.ex
+index ce970f6..3eb09ac 100644
+--- test/support/conn_case.ex
++++ test/support/conn_case.ex
+@@ -8,11 +8,9 @@ defmodule SampleAppWeb.ConnCase do
+   to build common data structures and query the data layer.
+ 
+   Finally, if the test case interacts with the database,
+-  we enable the SQL sandbox, so changes done to the database
+-  are reverted at the end of every test. If you are using
+-  PostgreSQL, you can even run database tests asynchronously
+-  by setting `use SampleAppWeb.ConnCase, async: true`, although
+-  this option is not recommended for other databases.
++  it cannot be async. For this reason, every test runs
++  inside a transaction which is reset at the beginning
++  of the test unless the test case is marked as async.
+   """
+ 
+   use ExUnit.CaseTemplate
+@@ -20,8 +18,7 @@ defmodule SampleAppWeb.ConnCase do
+   using do
+     quote do
+       # Import conveniences for testing with connections
+-      import Plug.Conn
+-      import Phoenix.ConnTest
++      use Phoenix.ConnTest
+       alias SampleAppWeb.Router.Helpers, as: Routes
+ 
+       # The default endpoint for testing
+diff --git test/support/data_case.ex test/support/data_case.ex
+index 11a105f..7ad0f52 100644
+--- test/support/data_case.ex
++++ test/support/data_case.ex
+@@ -7,11 +7,9 @@ defmodule SampleApp.DataCase do
+   your tests.
+ 
+   Finally, if the test case interacts with the database,
+-  we enable the SQL sandbox, so changes done to the database
+-  are reverted at the end of every test. If you are using
+-  PostgreSQL, you can even run database tests asynchronously
+-  by setting `use SampleApp.DataCase, async: true`, although
+-  this option is not recommended for other databases.
++  it cannot be async. For this reason, every test runs
++  inside a transaction which is reset at the beginning
++  of the test unless the test case is marked as async.
+   """
+ 
+   use ExUnit.CaseTemplate
+@@ -48,7 +46,7 @@ defmodule SampleApp.DataCase do
+   def errors_on(changeset) do
+     Ecto.Changeset.traverse_errors(changeset, fn {message, opts} ->
+       Regex.replace(~r"%{(\w+)}", message, fn _, key ->
+-        opts |> Keyword.get(String.to_existing_atom(key), key) |> to_string()
++        opts |> Map.get(String.to_existing_atom(key), key) |> to_string()
+       end)
+     end)
+   end
