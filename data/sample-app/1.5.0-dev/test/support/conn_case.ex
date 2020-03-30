@@ -22,6 +22,8 @@ defmodule SampleAppWeb.ConnCase do
       # Import conveniences for testing with connections
       import Plug.Conn
       import Phoenix.ConnTest
+      import SampleAppWeb.ConnCase
+
       alias SampleAppWeb.Router.Helpers, as: Routes
 
       # The default endpoint for testing

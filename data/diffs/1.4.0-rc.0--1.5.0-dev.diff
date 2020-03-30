@@ -27,18 +27,20 @@ index 7a97fd7..f190c9b 100644
 -# variables.
 -/config/*.secret.exs
 diff --git README.md README.md
-index 96fe487..1da0428 100644
+index 96fe487..163d656 100644
 --- README.md
 +++ README.md
-@@ -3,7 +3,7 @@
+@@ -3,8 +3,8 @@
  To start your Phoenix server:
  
    * Install dependencies with `mix deps.get`
 -  * Create and migrate your database with `mix ecto.create && mix ecto.migrate`
+-  * Install Node.js dependencies with `cd assets && npm install`
 +  * Create and migrate your database with `mix ecto.setup`
-   * Install Node.js dependencies with `cd assets && npm install`
++  * Install Node.js dependencies with `npm install --prefix assets`
    * Start Phoenix endpoint with `mix phx.server`
  
+ Now you can visit [`localhost:4000`](http://localhost:4000) from your browser.
 @@ -13,8 +13,8 @@ Ready to run in production? Please [check our deployment guides](https://hexdocs
  
  ## Learn more
@@ -230,10 +232,10 @@ index c81fa4f..7ce647b 100644
    }
  }
 diff --git assets/webpack.config.js assets/webpack.config.js
-index 45ab14f..68b77cb 100644
+index 45ab14f..1be6e21 100644
 --- assets/webpack.config.js
 +++ assets/webpack.config.js
-@@ -1,24 +1,26 @@
+@@ -1,41 +1,55 @@
  const path = require('path');
  const glob = require('glob');
  const MiniCssExtractPlugin = require('mini-css-extract-plugin');
@@ -241,45 +243,87 @@ index 45ab14f..68b77cb 100644
 +const TerserPlugin = require('terser-webpack-plugin');
  const OptimizeCSSAssetsPlugin = require('optimize-css-assets-webpack-plugin');
  const CopyWebpackPlugin = require('copy-webpack-plugin');
-+const devMode = process.env.NODE_ENV !== 'production'
  
- module.exports = (env, options) => ({
-   optimization: {
-     minimizer: [
+-module.exports = (env, options) => ({
+-  optimization: {
+-    minimizer: [
 -      new UglifyJsPlugin({ cache: true, parallel: true, sourceMap: false }),
-+      new TerserPlugin({ cache: true, parallel: true, sourceMap: devMode }),
-       new OptimizeCSSAssetsPlugin({})
-     ]
-   },
-   entry: {
+-      new OptimizeCSSAssetsPlugin({})
+-    ]
+-  },
+-  entry: {
 -      './js/app.js': ['./js/app.js'].concat(glob.sync('./vendor/**/*.js'))
-+    './js/app.js': glob.sync('./vendor/**/*.js').concat(['./js/app.js'])
-   },
-   output: {
-     filename: 'app.js',
-     path: path.resolve(__dirname, '../priv/static/js')
-   },
-+  devtool: devMode ? 'source-map' : undefined,
-   module: {
-     rules: [
-       {
-@@ -30,7 +32,15 @@ module.exports = (env, options) => ({
-       },
-       {
-         test: /\.css$/,
--        use: [MiniCssExtractPlugin.loader, 'css-loader']
-+        use: [
-+          MiniCssExtractPlugin.loader,
-+          {
-+            loader: 'css-loader',
-+            options: {
-+              sourceMap: devMode
-+            }
+-  },
+-  output: {
+-    filename: 'app.js',
+-    path: path.resolve(__dirname, '../priv/static/js')
+-  },
+-  module: {
+-    rules: [
+-      {
+-        test: /\.js$/,
+-        exclude: /node_modules/,
+-        use: {
+-          loader: 'babel-loader'
++module.exports = (env, options) => {
++  const devMode = options.mode !== 'production';
++
++  return {
++    optimization: {
++      minimizer: [
++        new TerserPlugin({ cache: true, parallel: true, sourceMap: devMode }),
++        new OptimizeCSSAssetsPlugin({})
++      ]
++    },
++    entry: {
++      'app': glob.sync('./vendor/**/*.js').concat(['./js/app.js'])
++    },
++    output: {
++      filename: '[name].js',
++      path: path.resolve(__dirname, '../priv/static/js'),
++      publicPath: '/js/'
++    },
++    devtool: devMode ? 'source-map' : undefined,
++    module: {
++      rules: [
++        {
++          test: /\.js$/,
++          exclude: /node_modules/,
++          use: {
++            loader: 'babel-loader'
 +          }
-+        ]
-       }
++        },
++        {
++          test: /\.css$/,
++          use: [
++            MiniCssExtractPlugin.loader,
++            {
++              loader: 'css-loader',
++              options: {
++                sourceMap: devMode
++              }
++            }
++          ]
+         }
+-      },
+-      {
+-        test: /\.css$/,
+-        use: [MiniCssExtractPlugin.loader, 'css-loader']
+-      }
++      ]
++    },
++    plugins: [
++      new MiniCssExtractPlugin({ filename: '../css/app.css' }),
++      new CopyWebpackPlugin([{ from: 'static/', to: '../' }])
      ]
-   },
+-  },
+-  plugins: [
+-    new MiniCssExtractPlugin({ filename: '../css/app.css' }),
+-    new CopyWebpackPlugin([{ from: 'static/', to: '../' }])
+-  ]
+-});
++  }
++};
 diff --git config/config.exs config/config.exs
 index be6f3a3..8ada87a 100644
 --- config/config.exs
@@ -499,10 +543,10 @@ index e893efe..507b703 100644
 -  hostname: "localhost",
 -  pool: Ecto.Adapters.SQL.Sandbox
 diff --git lib/sample_app/application.ex lib/sample_app/application.ex
-index f9584e1..84e1f18 100644
+index f9584e1..2d81a93 100644
 --- lib/sample_app/application.ex
 +++ lib/sample_app/application.ex
-@@ -6,14 +6,15 @@ defmodule SampleApp.Application do
+@@ -6,14 +6,17 @@ defmodule SampleApp.Application do
    use Application
  
    def start(_type, _args) do
@@ -511,6 +555,8 @@ index f9584e1..84e1f18 100644
        # Start the Ecto repository
        SampleApp.Repo,
 -      # Start the endpoint when the application starts
++      # Start the Telemetry supervisor
++      SampleAppWeb.Telemetry,
 +      # Start the PubSub system
 +      {Phoenix.PubSub, name: SampleApp.PubSub},
 +      # Start the Endpoint (http/https)
@@ -523,10 +569,10 @@ index f9584e1..84e1f18 100644
  
      # See https://hexdocs.pm/elixir/Supervisor.html
 diff --git lib/sample_app_web/endpoint.ex lib/sample_app_web/endpoint.ex
-index 92ca519..285d1c9 100644
+index 92ca519..85cbe9b 100644
 --- lib/sample_app_web/endpoint.ex
 +++ lib/sample_app_web/endpoint.ex
-@@ -1,6 +1,15 @@
+@@ -1,10 +1,22 @@
  defmodule SampleAppWeb.Endpoint do
    use Phoenix.Endpoint, otp_app: :sample_app
  
@@ -542,20 +588,31 @@ index 92ca519..285d1c9 100644
    socket "/socket", SampleAppWeb.UserSocket,
      websocket: true,
      longpoll: false
-@@ -21,10 +30,11 @@ defmodule SampleAppWeb.Endpoint do
+ 
++  socket "/live", Phoenix.LiveView.Socket,
++    websocket: [connect_info: [session: @session_options]]
++
+   # Serve at "/" the static files from "priv/static" directory.
+   #
+   # You should set gzip to true if you are running phx.digest
+@@ -21,10 +33,15 @@ defmodule SampleAppWeb.Endpoint do
      socket "/phoenix/live_reload/socket", Phoenix.LiveReloader.Socket
      plug Phoenix.LiveReloader
      plug Phoenix.CodeReloader
 +    plug Phoenix.Ecto.CheckRepoStatus, otp_app: :sample_app
    end
  
++  plug Phoenix.LiveDashboard.RequestLogger,
++    param_key: "request_logger",
++    cookie_key: "request_logger"
++
    plug Plug.RequestId
 -  plug Plug.Logger
 +  plug Plug.Telemetry, event_prefix: [:phoenix, :endpoint]
  
    plug Plug.Parsers,
      parsers: [:urlencoded, :multipart, :json],
-@@ -33,14 +43,6 @@ defmodule SampleAppWeb.Endpoint do
+@@ -33,14 +50,6 @@ defmodule SampleAppWeb.Endpoint do
  
    plug Plug.MethodOverride
    plug Plug.Head
@@ -571,23 +628,107 @@ index 92ca519..285d1c9 100644
 +  plug Plug.Session, @session_options
    plug SampleAppWeb.Router
  end
+diff --git lib/sample_app_web/router.ex lib/sample_app_web/router.ex
+index e950a94..2ad82b8 100644
+--- lib/sample_app_web/router.ex
++++ lib/sample_app_web/router.ex
+@@ -19,6 +19,22 @@ defmodule SampleAppWeb.Router do
+     get "/", PageController, :index
+   end
+ 
++  # Enables LiveDashboard only for development
++  #
++  # If you want to use the LiveDashboard in production, you should put
++  # it behind authentication and allow only admins to access it.
++  # If your application does not have an admins-only section yet,
++  # you can use Plug.BasicAuth to set up some basic authentication
++  # as long as you are also using SSL (which you should anyway).
++  if Mix.env() == :dev do
++    import Phoenix.LiveDashboard.Router
++
++    scope "/" do
++      pipe_through :browser
++      live_dashboard "/dashboard", metrics: SampleAppWeb.Telemetry
++    end
++  end
++
+   # Other scopes may use custom stacks.
+   # scope "/api", SampleAppWeb do
+   #   pipe_through :api
+diff --git a/data/sample-app/1.5.0-dev/lib/sample_app_web/telemetry.ex lib/sample_app_web/telemetry.ex
+new file mode 100644
+index 0000000..2faf0e7
+--- /dev/null
++++ lib/sample_app_web/telemetry.ex
+@@ -0,0 +1,52 @@
++defmodule SampleAppWeb.Telemetry do
++  use Supervisor
++  import Telemetry.Metrics
++
++  def start_link(arg) do
++    Supervisor.start_link(__MODULE__, arg, name: __MODULE__)
++  end
++
++  def init(_arg) do
++    children = [
++      {:telemetry_poller, measurements: periodic_measurements(), period: 10_000}
++      # Add reporters as children of your supervision tree.
++      # {Telemetry.Metrics.ConsoleReporter, metrics: metrics()}
++    ]
++
++    Supervisor.init(children, strategy: :one_for_one)
++  end
++
++  def metrics do
++    [
++      # Phoenix Metrics
++      summary("phoenix.endpoint.stop.duration",
++        unit: {:native, :millisecond}
++      ),
++      summary("phoenix.router_dispatch.stop.duration",
++        tags: [:route],
++        unit: {:native, :millisecond}
++      ),
++
++      # Database Metrics
++      summary("sample_app.repo.query.total_time", unit: {:native, :millisecond}),
++      summary("sample_app.repo.query.decode_time", unit: {:native, :millisecond}),
++      summary("sample_app.repo.query.query_time", unit: {:native, :millisecond}),
++      summary("sample_app.repo.query.queue_time", unit: {:native, :millisecond}),
++      summary("sample_app.repo.query.idle_time", unit: {:native, :millisecond}),
++
++      # VM Metrics
++      summary("vm.memory.total", unit: {:byte, :kilobyte}),
++      summary("vm.total_run_queue_lengths.total"),
++      summary("vm.total_run_queue_lengths.cpu"),
++      summary("vm.total_run_queue_lengths.io")
++    ]
++  end
++
++  defp periodic_measurements do
++    [
++      # A module, function and arguments to be invoked periodically.
++      # This function must call :telemetry.execute/3 and a metric must be added above.
++      # {SampleAppWeb, :count_users, []}
++    ]
++  end
++end
 diff --git lib/sample_app_web/templates/layout/app.html.eex lib/sample_app_web/templates/layout/app.html.eex
-index c01291c..2dfc524 100644
+index c01291c..0feb4b8 100644
 --- lib/sample_app_web/templates/layout/app.html.eex
 +++ lib/sample_app_web/templates/layout/app.html.eex
-@@ -4,8 +4,9 @@
-     <meta charset="utf-8"/>
+@@ -5,7 +5,9 @@
      <meta http-equiv="X-UA-Compatible" content="IE=edge"/>
      <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
--    <title>SampleApp · Phoenix Framework</title>
+     <title>SampleApp · Phoenix Framework</title>
 -    <link rel="stylesheet" href="<%= Routes.static_url(@conn, "/css/app.css") %>"/>
-+    <title><%= assigns[:page_title] || "SampleApp · Phoenix Framework" %></title>
 +    <link rel="stylesheet" href="<%= Routes.static_path(@conn, "/css/app.css") %>"/>
 +    <%= csrf_meta_tag() %>
++    <script defer type="text/javascript" src="<%= Routes.static_path(@conn, "/js/app.js") %>"></script>
    </head>
    <body>
      <header>
-@@ -15,16 +16,16 @@
+@@ -15,16 +17,15 @@
              <li><a href="https://hexdocs.pm/phoenix/overview.html">Get Started</a></li>
            </ul>
          </nav>
@@ -605,7 +746,6 @@ index c01291c..2dfc524 100644
 +      <%= @inner_content %>
      </main>
 -    <script type="text/javascript" src="<%= Routes.static_url(@conn, "/js/app.js") %>"></script>
-+    <script type="text/javascript" src="<%= Routes.static_path(@conn, "/js/app.js") %>"></script>
    </body>
  </html>
 diff --git lib/sample_app_web/templates/page/index.html.eex lib/sample_app_web/templates/page/index.html.eex
@@ -700,7 +840,7 @@ index bf6f62a..ec053d5 100644
    When used, dispatch to the appropriate controller/view/etc.
    """
 diff --git mix.exs mix.exs
-index 872a2af..7cac632 100644
+index 872a2af..51323d0 100644
 --- mix.exs
 +++ mix.exs
 @@ -5,7 +5,7 @@ defmodule SampleApp.MixProject do
@@ -712,7 +852,7 @@ index 872a2af..7cac632 100644
        elixirc_paths: elixirc_paths(Mix.env()),
        compilers: [:phoenix, :gettext] ++ Mix.compilers(),
        start_permanent: Mix.env() == :prod,
-@@ -33,15 +33,15 @@ defmodule SampleApp.MixProject do
+@@ -33,15 +33,18 @@ defmodule SampleApp.MixProject do
    # Type `mix help deps` for examples and options.
    defp deps do
      [
@@ -721,11 +861,14 @@ index 872a2af..7cac632 100644
 -      {:phoenix_ecto, "~> 3.2"},
 +      {:phoenix, github: "phoenixframework/phoenix", override: true},
 +      {:phoenix_ecto, "~> 4.1"},
-+      {:ecto_sql, "~> 3.1"},
++      {:ecto_sql, "~> 3.4"},
        {:postgrex, ">= 0.0.0"},
++      {:phoenix_live_dashboard, github: "phoenixframework/phoenix_live_dashboard"},
        {:phoenix_html, "~> 2.11"},
 -      {:phoenix_live_reload, "~> 1.0", only: :dev},
 +      {:phoenix_live_reload, "~> 1.2", only: :dev},
++      {:telemetry_metrics, "~> 0.4"},
++      {:telemetry_poller, "~> 0.4"},
        {:gettext, "~> 0.11"},
        {:jason, "~> 1.0"},
 -      {:cowboy, "~> 1.0"}
@@ -757,7 +900,7 @@ index 6125800..518823f 100644
 +  # import Phoenix.HTML
  end
 diff --git test/support/channel_case.ex test/support/channel_case.ex
-index d199879..ebc27ed 100644
+index d199879..7df4bf1 100644
 --- test/support/channel_case.ex
 +++ test/support/channel_case.ex
 @@ -8,9 +8,11 @@ defmodule SampleAppWeb.ChannelCase do
@@ -775,17 +918,18 @@ index d199879..ebc27ed 100644
    """
  
    use ExUnit.CaseTemplate
-@@ -18,7 +20,7 @@ defmodule SampleAppWeb.ChannelCase do
+@@ -18,7 +20,8 @@ defmodule SampleAppWeb.ChannelCase do
    using do
      quote do
        # Import conveniences for testing with channels
 -      use Phoenix.ChannelTest
 +      import Phoenix.ChannelTest
++      import SampleAppWeb.ChannelCase
  
        # The default endpoint for testing
        @endpoint SampleAppWeb.Endpoint
 diff --git test/support/conn_case.ex test/support/conn_case.ex
-index 3eb09ac..ce970f6 100644
+index 3eb09ac..7bf4824 100644
 --- test/support/conn_case.ex
 +++ test/support/conn_case.ex
 @@ -8,9 +8,11 @@ defmodule SampleAppWeb.ConnCase do
@@ -803,13 +947,15 @@ index 3eb09ac..ce970f6 100644
    """
  
    use ExUnit.CaseTemplate
-@@ -18,7 +20,8 @@ defmodule SampleAppWeb.ConnCase do
+@@ -18,7 +20,10 @@ defmodule SampleAppWeb.ConnCase do
    using do
      quote do
        # Import conveniences for testing with connections
 -      use Phoenix.ConnTest
 +      import Plug.Conn
 +      import Phoenix.ConnTest
++      import SampleAppWeb.ConnCase
++
        alias SampleAppWeb.Router.Helpers, as: Routes
  
        # The default endpoint for testing

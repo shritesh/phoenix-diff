@@ -21,6 +21,7 @@ defmodule SampleAppWeb.ChannelCase do
     quote do
       # Import conveniences for testing with channels
       import Phoenix.ChannelTest
+      import SampleAppWeb.ChannelCase
 
       # The default endpoint for testing
       @endpoint SampleAppWeb.Endpoint

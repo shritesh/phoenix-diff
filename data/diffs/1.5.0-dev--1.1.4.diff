@@ -66,7 +66,7 @@ index f190c9b..0a63252 100644
 +# variables.
 +/config/prod.secret.exs
 diff --git README.md README.md
-index 1da0428..6950510 100644
+index 163d656..6950510 100644
 --- README.md
 +++ README.md
 @@ -1,20 +1,20 @@
@@ -77,7 +77,7 @@ index 1da0428..6950510 100644
  
    * Install dependencies with `mix deps.get`
 -  * Create and migrate your database with `mix ecto.setup`
--  * Install Node.js dependencies with `cd assets && npm install`
+-  * Install Node.js dependencies with `npm install --prefix assets`
 -  * Start Phoenix endpoint with `mix phx.server`
 +  * Create and migrate your database with `mix ecto.create && mix ecto.migrate`
 +  * Install Node.js dependencies with `npm install`
@@ -314,61 +314,65 @@ index 7ce647b..0000000
 -}
 diff --git assets/webpack.config.js b/data/sample-app/1.5.0-dev/assets/webpack.config.js
 deleted file mode 100644
-index 68b77cb..0000000
+index 1be6e21..0000000
 --- assets/webpack.config.js
 +++ /dev/null
-@@ -1,51 +0,0 @@
+@@ -1,55 +0,0 @@
 -const path = require('path');
 -const glob = require('glob');
 -const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 -const TerserPlugin = require('terser-webpack-plugin');
 -const OptimizeCSSAssetsPlugin = require('optimize-css-assets-webpack-plugin');
 -const CopyWebpackPlugin = require('copy-webpack-plugin');
--const devMode = process.env.NODE_ENV !== 'production'
 -
--module.exports = (env, options) => ({
--  optimization: {
--    minimizer: [
--      new TerserPlugin({ cache: true, parallel: true, sourceMap: devMode }),
--      new OptimizeCSSAssetsPlugin({})
--    ]
--  },
--  entry: {
--    './js/app.js': glob.sync('./vendor/**/*.js').concat(['./js/app.js'])
--  },
--  output: {
--    filename: 'app.js',
--    path: path.resolve(__dirname, '../priv/static/js')
--  },
--  devtool: devMode ? 'source-map' : undefined,
--  module: {
--    rules: [
--      {
--        test: /\.js$/,
--        exclude: /node_modules/,
--        use: {
--          loader: 'babel-loader'
--        }
--      },
--      {
--        test: /\.css$/,
--        use: [
--          MiniCssExtractPlugin.loader,
--          {
--            loader: 'css-loader',
--            options: {
--              sourceMap: devMode
--            }
+-module.exports = (env, options) => {
+-  const devMode = options.mode !== 'production';
+-
+-  return {
+-    optimization: {
+-      minimizer: [
+-        new TerserPlugin({ cache: true, parallel: true, sourceMap: devMode }),
+-        new OptimizeCSSAssetsPlugin({})
+-      ]
+-    },
+-    entry: {
+-      'app': glob.sync('./vendor/**/*.js').concat(['./js/app.js'])
+-    },
+-    output: {
+-      filename: '[name].js',
+-      path: path.resolve(__dirname, '../priv/static/js'),
+-      publicPath: '/js/'
+-    },
+-    devtool: devMode ? 'source-map' : undefined,
+-    module: {
+-      rules: [
+-        {
+-          test: /\.js$/,
+-          exclude: /node_modules/,
+-          use: {
+-            loader: 'babel-loader'
 -          }
--        ]
--      }
+-        },
+-        {
+-          test: /\.css$/,
+-          use: [
+-            MiniCssExtractPlugin.loader,
+-            {
+-              loader: 'css-loader',
+-              options: {
+-                sourceMap: devMode
+-              }
+-            }
+-          ]
+-        }
+-      ]
+-    },
+-    plugins: [
+-      new MiniCssExtractPlugin({ filename: '../css/app.css' }),
+-      new CopyWebpackPlugin([{ from: 'static/', to: '../' }])
 -    ]
--  },
--  plugins: [
--    new MiniCssExtractPlugin({ filename: '../css/app.css' }),
--    new CopyWebpackPlugin([{ from: 'static/', to: '../' }])
--  ]
--});
+-  }
+-};
 diff --git a/data/sample-app/1.1.4/brunch-config.js brunch-config.js
 new file mode 100644
 index 0000000..d3999c9
@@ -789,10 +793,10 @@ index 507b703..78f87f6 100644
 +  pool: Ecto.Adapters.SQL.Sandbox
 diff --git lib/sample_app/application.ex b/data/sample-app/1.5.0-dev/lib/sample_app/application.ex
 deleted file mode 100644
-index 84e1f18..0000000
+index 2d81a93..0000000
 --- lib/sample_app/application.ex
 +++ /dev/null
-@@ -1,32 +0,0 @@
+@@ -1,34 +0,0 @@
 -defmodule SampleApp.Application do
 -  # See https://hexdocs.pm/elixir/Application.html
 -  # for more information on OTP Applications
@@ -804,6 +808,8 @@ index 84e1f18..0000000
 -    children = [
 -      # Start the Ecto repository
 -      SampleApp.Repo,
+-      # Start the Telemetry supervisor
+-      SampleAppWeb.Telemetry,
 -      # Start the PubSub system
 -      {Phoenix.PubSub, name: SampleApp.PubSub},
 -      # Start the Endpoint (http/https)
@@ -825,66 +831,43 @@ index 84e1f18..0000000
 -    :ok
 -  end
 -end
-diff --git lib/sample_app_web/endpoint.ex lib/sample_app/endpoint.ex
-similarity index 52%
-rename from data/sample-app/1.5.0-dev/lib/sample_app_web/endpoint.ex
-rename to data/sample-app/1.1.4/lib/sample_app/endpoint.ex
-index 285d1c9..2493747 100644
---- lib/sample_app_web/endpoint.ex
+diff --git a/data/sample-app/1.1.4/lib/sample_app/endpoint.ex lib/sample_app/endpoint.ex
+new file mode 100644
+index 0000000..2493747
+--- /dev/null
 +++ lib/sample_app/endpoint.ex
-@@ -1,27 +1,14 @@
--defmodule SampleAppWeb.Endpoint do
+@@ -0,0 +1,39 @@
 +defmodule SampleApp.Endpoint do
-   use Phoenix.Endpoint, otp_app: :sample_app
- 
--  # The session will be stored in the cookie and signed,
--  # this means its contents can be read but not tampered with.
--  # Set :encryption_salt if you would also like to encrypt it.
--  @session_options [
--    store: :cookie,
--    key: "_sample_app_key",
--    signing_salt: "aaaaaaaa"
--  ]
--
--  socket "/socket", SampleAppWeb.UserSocket,
--    websocket: true,
--    longpoll: false
++  use Phoenix.Endpoint, otp_app: :sample_app
++
 +  socket "/socket", SampleApp.UserSocket
- 
-   # Serve at "/" the static files from "priv/static" directory.
-   #
--  # You should set gzip to true if you are running phx.digest
++
++  # Serve at "/" the static files from "priv/static" directory.
++  #
 +  # You should set gzip to true if you are running phoenix.digest
-   # when deploying your static files in production.
-   plug Plug.Static,
--    at: "/",
--    from: :sample_app,
--    gzip: false,
++  # when deploying your static files in production.
++  plug Plug.Static,
 +    at: "/", from: :sample_app, gzip: false,
-     only: ~w(css fonts images js favicon.ico robots.txt)
- 
-   # Code reloading can be explicitly enabled under the
-@@ -30,19 +17,23 @@ defmodule SampleAppWeb.Endpoint do
-     socket "/phoenix/live_reload/socket", Phoenix.LiveReloader.Socket
-     plug Phoenix.LiveReloader
-     plug Phoenix.CodeReloader
--    plug Phoenix.Ecto.CheckRepoStatus, otp_app: :sample_app
-   end
- 
-   plug Plug.RequestId
--  plug Plug.Telemetry, event_prefix: [:phoenix, :endpoint]
++    only: ~w(css fonts images js favicon.ico robots.txt)
++
++  # Code reloading can be explicitly enabled under the
++  # :code_reloader configuration of your endpoint.
++  if code_reloading? do
++    socket "/phoenix/live_reload/socket", Phoenix.LiveReloader.Socket
++    plug Phoenix.LiveReloader
++    plug Phoenix.CodeReloader
++  end
++
++  plug Plug.RequestId
 +  plug Plug.Logger
- 
-   plug Plug.Parsers,
-     parsers: [:urlencoded, :multipart, :json],
-     pass: ["*/*"],
--    json_decoder: Phoenix.json_library()
++
++  plug Plug.Parsers,
++    parsers: [:urlencoded, :multipart, :json],
++    pass: ["*/*"],
 +    json_decoder: Poison
- 
-   plug Plug.MethodOverride
-   plug Plug.Head
--  plug Plug.Session, @session_options
--  plug SampleAppWeb.Router
++
++  plug Plug.MethodOverride
++  plug Plug.Head
 +
 +  plug Plug.Session,
 +    store: :cookie,
@@ -892,7 +875,7 @@ index 285d1c9..2493747 100644
 +    signing_salt: "aaaaaaaa"
 +
 +  plug SampleApp.Router
- end
++end
 diff --git lib/sample_app/repo.ex lib/sample_app/repo.ex
 index 338b8ba..37477c1 100644
 --- lib/sample_app/repo.ex
@@ -958,6 +941,67 @@ index d88618d..0000000
 -    render(conn, "index.html")
 -  end
 -end
+diff --git lib/sample_app_web/endpoint.ex b/data/sample-app/1.5.0-dev/lib/sample_app_web/endpoint.ex
+deleted file mode 100644
+index 85cbe9b..0000000
+--- lib/sample_app_web/endpoint.ex
++++ /dev/null
+@@ -1,55 +0,0 @@
+-defmodule SampleAppWeb.Endpoint do
+-  use Phoenix.Endpoint, otp_app: :sample_app
+-
+-  # The session will be stored in the cookie and signed,
+-  # this means its contents can be read but not tampered with.
+-  # Set :encryption_salt if you would also like to encrypt it.
+-  @session_options [
+-    store: :cookie,
+-    key: "_sample_app_key",
+-    signing_salt: "aaaaaaaa"
+-  ]
+-
+-  socket "/socket", SampleAppWeb.UserSocket,
+-    websocket: true,
+-    longpoll: false
+-
+-  socket "/live", Phoenix.LiveView.Socket,
+-    websocket: [connect_info: [session: @session_options]]
+-
+-  # Serve at "/" the static files from "priv/static" directory.
+-  #
+-  # You should set gzip to true if you are running phx.digest
+-  # when deploying your static files in production.
+-  plug Plug.Static,
+-    at: "/",
+-    from: :sample_app,
+-    gzip: false,
+-    only: ~w(css fonts images js favicon.ico robots.txt)
+-
+-  # Code reloading can be explicitly enabled under the
+-  # :code_reloader configuration of your endpoint.
+-  if code_reloading? do
+-    socket "/phoenix/live_reload/socket", Phoenix.LiveReloader.Socket
+-    plug Phoenix.LiveReloader
+-    plug Phoenix.CodeReloader
+-    plug Phoenix.Ecto.CheckRepoStatus, otp_app: :sample_app
+-  end
+-
+-  plug Phoenix.LiveDashboard.RequestLogger,
+-    param_key: "request_logger",
+-    cookie_key: "request_logger"
+-
+-  plug Plug.RequestId
+-  plug Plug.Telemetry, event_prefix: [:phoenix, :endpoint]
+-
+-  plug Plug.Parsers,
+-    parsers: [:urlencoded, :multipart, :json],
+-    pass: ["*/*"],
+-    json_decoder: Phoenix.json_library()
+-
+-  plug Plug.MethodOverride
+-  plug Plug.Head
+-  plug Plug.Session, @session_options
+-  plug SampleAppWeb.Router
+-end
 diff --git lib/sample_app_web/gettext.ex b/data/sample-app/1.5.0-dev/lib/sample_app_web/gettext.ex
 deleted file mode 100644
 index 2659fa6..0000000
@@ -988,9 +1032,115 @@ index 2659fa6..0000000
 -  """
 -  use Gettext, otp_app: :sample_app
 -end
+diff --git lib/sample_app_web/router.ex b/data/sample-app/1.5.0-dev/lib/sample_app_web/router.ex
+deleted file mode 100644
+index 2ad82b8..0000000
+--- lib/sample_app_web/router.ex
++++ /dev/null
+@@ -1,42 +0,0 @@
+-defmodule SampleAppWeb.Router do
+-  use SampleAppWeb, :router
+-
+-  pipeline :browser do
+-    plug :accepts, ["html"]
+-    plug :fetch_session
+-    plug :fetch_flash
+-    plug :protect_from_forgery
+-    plug :put_secure_browser_headers
+-  end
+-
+-  pipeline :api do
+-    plug :accepts, ["json"]
+-  end
+-
+-  scope "/", SampleAppWeb do
+-    pipe_through :browser
+-
+-    get "/", PageController, :index
+-  end
+-
+-  # Enables LiveDashboard only for development
+-  #
+-  # If you want to use the LiveDashboard in production, you should put
+-  # it behind authentication and allow only admins to access it.
+-  # If your application does not have an admins-only section yet,
+-  # you can use Plug.BasicAuth to set up some basic authentication
+-  # as long as you are also using SSL (which you should anyway).
+-  if Mix.env() == :dev do
+-    import Phoenix.LiveDashboard.Router
+-
+-    scope "/" do
+-      pipe_through :browser
+-      live_dashboard "/dashboard", metrics: SampleAppWeb.Telemetry
+-    end
+-  end
+-
+-  # Other scopes may use custom stacks.
+-  # scope "/api", SampleAppWeb do
+-  #   pipe_through :api
+-  # end
+-end
+diff --git lib/sample_app_web/telemetry.ex b/data/sample-app/1.5.0-dev/lib/sample_app_web/telemetry.ex
+deleted file mode 100644
+index 2faf0e7..0000000
+--- lib/sample_app_web/telemetry.ex
++++ /dev/null
+@@ -1,52 +0,0 @@
+-defmodule SampleAppWeb.Telemetry do
+-  use Supervisor
+-  import Telemetry.Metrics
+-
+-  def start_link(arg) do
+-    Supervisor.start_link(__MODULE__, arg, name: __MODULE__)
+-  end
+-
+-  def init(_arg) do
+-    children = [
+-      {:telemetry_poller, measurements: periodic_measurements(), period: 10_000}
+-      # Add reporters as children of your supervision tree.
+-      # {Telemetry.Metrics.ConsoleReporter, metrics: metrics()}
+-    ]
+-
+-    Supervisor.init(children, strategy: :one_for_one)
+-  end
+-
+-  def metrics do
+-    [
+-      # Phoenix Metrics
+-      summary("phoenix.endpoint.stop.duration",
+-        unit: {:native, :millisecond}
+-      ),
+-      summary("phoenix.router_dispatch.stop.duration",
+-        tags: [:route],
+-        unit: {:native, :millisecond}
+-      ),
+-
+-      # Database Metrics
+-      summary("sample_app.repo.query.total_time", unit: {:native, :millisecond}),
+-      summary("sample_app.repo.query.decode_time", unit: {:native, :millisecond}),
+-      summary("sample_app.repo.query.query_time", unit: {:native, :millisecond}),
+-      summary("sample_app.repo.query.queue_time", unit: {:native, :millisecond}),
+-      summary("sample_app.repo.query.idle_time", unit: {:native, :millisecond}),
+-
+-      # VM Metrics
+-      summary("vm.memory.total", unit: {:byte, :kilobyte}),
+-      summary("vm.total_run_queue_lengths.total"),
+-      summary("vm.total_run_queue_lengths.cpu"),
+-      summary("vm.total_run_queue_lengths.io")
+-    ]
+-  end
+-
+-  defp periodic_measurements do
+-    [
+-      # A module, function and arguments to be invoked periodically.
+-      # This function must call :telemetry.execute/3 and a metric must be added above.
+-      # {SampleAppWeb, :count_users, []}
+-    ]
+-  end
+-end
 diff --git lib/sample_app_web/templates/layout/app.html.eex b/data/sample-app/1.5.0-dev/lib/sample_app_web/templates/layout/app.html.eex
 deleted file mode 100644
-index 2dfc524..0000000
+index 0feb4b8..0000000
 --- lib/sample_app_web/templates/layout/app.html.eex
 +++ /dev/null
 @@ -1,31 +0,0 @@
@@ -1000,9 +1150,10 @@ index 2dfc524..0000000
 -    <meta charset="utf-8"/>
 -    <meta http-equiv="X-UA-Compatible" content="IE=edge"/>
 -    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
--    <title><%= assigns[:page_title] || "SampleApp · Phoenix Framework" %></title>
+-    <title>SampleApp · Phoenix Framework</title>
 -    <link rel="stylesheet" href="<%= Routes.static_path(@conn, "/css/app.css") %>"/>
 -    <%= csrf_meta_tag() %>
+-    <script defer type="text/javascript" src="<%= Routes.static_path(@conn, "/js/app.js") %>"></script>
 -  </head>
 -  <body>
 -    <header>
@@ -1022,7 +1173,6 @@ index 2dfc524..0000000
 -      <p class="alert alert-danger" role="alert"><%= get_flash(@conn, :error) %></p>
 -      <%= @inner_content %>
 -    </main>
--    <script type="text/javascript" src="<%= Routes.static_path(@conn, "/js/app.js") %>"></script>
 -  </body>
 -</html>
 diff --git lib/sample_app_web/templates/page/index.html.eex b/data/sample-app/1.5.0-dev/lib/sample_app_web/templates/page/index.html.eex
@@ -1246,10 +1396,10 @@ index ec053d5..0000000
 -  end
 -end
 diff --git mix.exs mix.exs
-index 7cac632..8296582 100644
+index 51323d0..8296582 100644
 --- mix.exs
 +++ mix.exs
-@@ -1,61 +1,52 @@
+@@ -1,64 +1,52 @@
 -defmodule SampleApp.MixProject do
 +defmodule SampleApp.Mixfile do
    use Mix.Project
@@ -1302,10 +1452,13 @@ index 7cac632..8296582 100644
 -    [
 -      {:phoenix, github: "phoenixframework/phoenix", override: true},
 -      {:phoenix_ecto, "~> 4.1"},
--      {:ecto_sql, "~> 3.1"},
+-      {:ecto_sql, "~> 3.4"},
 -      {:postgrex, ">= 0.0.0"},
+-      {:phoenix_live_dashboard, github: "phoenixframework/phoenix_live_dashboard"},
 -      {:phoenix_html, "~> 2.11"},
 -      {:phoenix_live_reload, "~> 1.2", only: :dev},
+-      {:telemetry_metrics, "~> 0.4"},
+-      {:telemetry_poller, "~> 0.4"},
 -      {:gettext, "~> 0.11"},
 -      {:jason, "~> 1.0"},
 -      {:plug_cowboy, "~> 2.0"}
@@ -1608,7 +1761,7 @@ index fe4c216..0000000
 -  use SampleAppWeb.ConnCase, async: true
 -end
 diff --git test/support/channel_case.ex test/support/channel_case.ex
-index ebc27ed..d95e3dc 100644
+index 7df4bf1..d95e3dc 100644
 --- test/support/channel_case.ex
 +++ test/support/channel_case.ex
 @@ -1,18 +1,16 @@
@@ -1636,11 +1789,12 @@ index ebc27ed..d95e3dc 100644
    """
  
    use ExUnit.CaseTemplate
-@@ -20,18 +18,22 @@ defmodule SampleAppWeb.ChannelCase do
+@@ -20,19 +18,22 @@ defmodule SampleAppWeb.ChannelCase do
    using do
      quote do
        # Import conveniences for testing with channels
 -      import Phoenix.ChannelTest
+-      import SampleAppWeb.ChannelCase
 +      use Phoenix.ChannelTest
 +
 +      alias SampleApp.Repo
@@ -1665,7 +1819,7 @@ index ebc27ed..d95e3dc 100644
  
      :ok
 diff --git test/support/conn_case.ex test/support/conn_case.ex
-index ce970f6..19b1a66 100644
+index 7bf4824..19b1a66 100644
 --- test/support/conn_case.ex
 +++ test/support/conn_case.ex
 @@ -1,18 +1,16 @@
@@ -1693,15 +1847,16 @@ index ce970f6..19b1a66 100644
    """
  
    use ExUnit.CaseTemplate
-@@ -20,22 +18,25 @@ defmodule SampleAppWeb.ConnCase do
+@@ -20,24 +18,25 @@ defmodule SampleAppWeb.ConnCase do
    using do
      quote do
        # Import conveniences for testing with connections
 -      import Plug.Conn
 -      import Phoenix.ConnTest
--      alias SampleAppWeb.Router.Helpers, as: Routes
+-      import SampleAppWeb.ConnCase
 +      use Phoenix.ConnTest
-+
+ 
+-      alias SampleAppWeb.Router.Helpers, as: Routes
 +      alias SampleApp.Repo
 +      import Ecto
 +      import Ecto.Changeset
@@ -2001,39 +2156,38 @@ index 0000000..bacaaba
 +  """
 +  use Gettext, otp_app: :sample_app
 +end
-diff --git lib/sample_app_web/router.ex web/router.ex
-similarity index 66%
-rename from data/sample-app/1.5.0-dev/lib/sample_app_web/router.ex
-rename to data/sample-app/1.1.4/web/router.ex
-index e950a94..de84255 100644
---- lib/sample_app_web/router.ex
+diff --git a/data/sample-app/1.1.4/web/router.ex web/router.ex
+new file mode 100644
+index 0000000..de84255
+--- /dev/null
 +++ web/router.ex
-@@ -1,5 +1,5 @@
--defmodule SampleAppWeb.Router do
--  use SampleAppWeb, :router
+@@ -0,0 +1,26 @@
 +defmodule SampleApp.Router do
 +  use SampleApp.Web, :router
- 
-   pipeline :browser do
-     plug :accepts, ["html"]
-@@ -13,14 +13,14 @@ defmodule SampleAppWeb.Router do
-     plug :accepts, ["json"]
-   end
- 
--  scope "/", SampleAppWeb do
--    pipe_through :browser
++
++  pipeline :browser do
++    plug :accepts, ["html"]
++    plug :fetch_session
++    plug :fetch_flash
++    plug :protect_from_forgery
++    plug :put_secure_browser_headers
++  end
++
++  pipeline :api do
++    plug :accepts, ["json"]
++  end
++
 +  scope "/", SampleApp do
 +    pipe_through :browser # Use the default browser stack
- 
-     get "/", PageController, :index
-   end
- 
-   # Other scopes may use custom stacks.
--  # scope "/api", SampleAppWeb do
++
++    get "/", PageController, :index
++  end
++
++  # Other scopes may use custom stacks.
 +  # scope "/api", SampleApp do
-   #   pipe_through :api
-   # end
- end
++  #   pipe_through :api
++  # end
++end
 diff --git assets/static/favicon.ico web/static/assets/favicon.ico
 similarity index 100%
 rename from data/sample-app/1.5.0-dev/assets/static/favicon.ico
